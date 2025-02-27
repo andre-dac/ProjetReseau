@@ -27,7 +27,7 @@ public class UDPServer {
                     String pseudo = message.substring(6).trim();
                     clients.put(clientKey, pseudo);
                     System.out.println("Nouveau client : " + pseudo + " (" + clientKey + ")");
-                    sendMessage(serverSocket, clientAddress, clientPort, "Bienvenue " + pseudo + " !");
+                    sendMessage(serverSocket, clientAddress, clientPort, "Connection au serveur réussite ! " + pseudo + " !");
                 } else if (message.startsWith("PRIVATE:")) {
                     // Gérer les messages privés
                     int firstColon = message.indexOf(":", 8);
