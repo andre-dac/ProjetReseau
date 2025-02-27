@@ -1,34 +1,43 @@
+import java.io.IOException;
 import java.net.*;
+import java.util.Scanner;
 
 public class UDPClient {
+    private static final int SERVER_PORT = 9876;
+
     public static void main(String[] args) {
-        final int SERVER_PORT = 3020; // Port du serveur
-        final String SERVER_ADDRESS = "127.0.0.1"; // Adresse du serveur (localhost)
+        try (DatagramSocket socket = new DatagramSocket()) {
+            InetAddress serverAddress = InetAddress.getByName("localhost");
+            System.out.println("Client connecté au serveur sur le port " + SERVER_PORT);
 
-        try {
-            DatagramSocket clientSocket = new DatagramSocket();
+            // Démarre un thread pour recevoir les messages du serveur
+            Thread receiveThread = new Thread(() -> {
+                try {
+                    while (true) {
+                        byte[] buffer = new byte[1024];
+                        DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+                        socket.receive(receivePacket);
 
-            // Préparer le message
-            String message = "hello serveur RX302";
-            byte[] data = message.getBytes();
-            InetAddress serverAddress = InetAddress.getByName(SERVER_ADDRESS);
+                        String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                        System.out.println("Réponse du serveur : " + response);
+                    }
+                } catch (IOException e) {
+                    System.out.println("Erreur lors de la réception.");
+                }
+            });
+            receiveThread.start();
 
-            // Envoi du message au serveur
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, serverAddress, SERVER_PORT);
-            clientSocket.send(sendPacket);
-            System.out.println("Message envoyé : " + message);
+            // Thread principal : envoie des messages
+            Scanner scanner = new Scanner(System.in);
+            while (true) {
+                System.out.print("Votre message : ");
+                String message = scanner.nextLine();
 
-            // Réception de la réponse du serveur
-            byte[] buffer = new byte[1024];
-            DatagramPacket receivedPacket = new DatagramPacket(buffer, buffer.length);
-            clientSocket.receive(receivedPacket);
-
-            // Afficher la réponse
-            String response = new String(receivedPacket.getData(), 0, receivedPacket.getLength());
-            System.out.println("Réponse reçue : " + response + " : " + receivedPacket.getAddress() + ":" + receivedPacket.getPort());
-
-            clientSocket.close(); // Fermer le socket
-        } catch (Exception e) {
+                byte[] sendData = message.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, SERVER_PORT);
+                socket.send(sendPacket);
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
