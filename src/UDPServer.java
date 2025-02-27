@@ -1,67 +1,53 @@
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.io.*;
+import java.net.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class UDPServer {
-    private static final int SERVER_PORT = 9876;
-
     public static void main(String[] args) {
-        try (DatagramSocket serverSocket = new DatagramSocket(SERVER_PORT)) {
-            System.out.println("Serveur en attente sur le port " + SERVER_PORT);
+        try {
+            DatagramSocket serverSocket = new DatagramSocket(9876);
+            System.out.println("Serveur UDP démarré...");
+
+            // Stockage des clients déjà connectés
+            Set<String> connectedClients = new HashSet<>();
 
             while (true) {
-                // Réception du premier message d'un client
-                byte[] buffer = new byte[1024];
-                DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+                byte[] receiveBuffer = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                 serverSocket.receive(receivePacket);
 
-                // Informations du client
+                String message = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
-                System.out.println("Connexion d'un client : " + clientAddress + ":" + clientPort);
 
-                // Démarre un thread pour gérer ce client
-                new Thread(new ClientHandler(clientAddress, clientPort)).start();
+                String clientKey = clientAddress.getHostAddress() + ":" + clientPort;
+
+                // Si c'est un nouveau client, on l'affiche
+                if (!connectedClients.contains(clientKey) && message.equals("hello serveur RX302")) {
+                    System.out.println("Nouveau client : " + clientKey);
+                    connectedClients.add(clientKey);
+
+                    // Envoyer la réponse initiale
+                    String response = "Serveur RX302 ready";
+                    sendMessage(serverSocket, clientAddress, clientPort, response);
+                } else {
+                    System.out.println("Message reçu de " + clientKey + " : " + message);
+
+                    // Répondre avec un écho du message
+                    String response = "Reçu : " + message;
+                    sendMessage(serverSocket, clientAddress, clientPort, response);
+                }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    // Gestion de chaque client dans un thread séparé
-    private static class ClientHandler implements Runnable {
-        private final InetAddress clientAddress;
-        private final int clientPort;
-
-        public ClientHandler(InetAddress clientAddress, int clientPort) {
-            this.clientAddress = clientAddress;
-            this.clientPort = clientPort;
-        }
-
-        @Override
-        public void run() {
-            try (DatagramSocket clientSocket = new DatagramSocket()) {
-                System.out.println("Nouveau thread pour " + clientAddress + ":" + clientPort);
-
-                while (true) {
-                    // Réception du message du client
-                    byte[] buffer = new byte[1024];
-                    DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
-                    clientSocket.receive(receivePacket);
-
-                    String message = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                    System.out.println("Message reçu de " + clientAddress + ":" + clientPort + " : " + message);
-
-                    // Réponse au client
-                    String response = "Reçu : " + message;
-                    byte[] sendData = response.getBytes();
-                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, clientAddress, clientPort);
-                    clientSocket.send(sendPacket);
-                }
-            } catch (IOException e) {
-                System.out.println("Déconnexion de " + clientAddress + ":" + clientPort);
-            }
-        }
+    private static void sendMessage(DatagramSocket socket, InetAddress address, int port, String message) throws IOException {
+        byte[] sendBuffer = message.getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, port);
+        socket.send(sendPacket);
     }
 }

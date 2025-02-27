@@ -1,44 +1,51 @@
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
 public class UDPClient {
-    private static final int SERVER_PORT = 9876;
-
     public static void main(String[] args) {
-        try (DatagramSocket socket = new DatagramSocket()) {
+        try {
+            DatagramSocket clientSocket = new DatagramSocket();
             InetAddress serverAddress = InetAddress.getByName("localhost");
-            System.out.println("Client connecté au serveur sur le port " + SERVER_PORT);
 
-            // Démarre un thread pour recevoir les messages du serveur
-            Thread receiveThread = new Thread(() -> {
-                try {
-                    while (true) {
-                        byte[] buffer = new byte[1024];
-                        DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
-                        socket.receive(receivePacket);
+            System.out.println("Client UDP démarré.");
 
-                        String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                        System.out.println("Réponse du serveur : " + response);
-                    }
-                } catch (IOException e) {
-                    System.out.println("Erreur lors de la réception.");
-                }
-            });
-            receiveThread.start();
+            // Envoi du message initial "hello serveur RX302"
+            String initialMessage = "hello serveur RX302";
+            sendMessage(clientSocket, serverAddress, 9876, initialMessage);
 
-            // Thread principal : envoie des messages
+            // Réception de la réponse du serveur
+            String initialResponse = receiveMessage(clientSocket);
+            System.out.println("Réponse du serveur : " + initialResponse);
+
+            // Communication continue : envoi et réception des messages du clavier
             Scanner scanner = new Scanner(System.in);
             while (true) {
                 System.out.print("Votre message : ");
                 String message = scanner.nextLine();
 
-                byte[] sendData = message.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, SERVER_PORT);
-                socket.send(sendPacket);
+                sendMessage(clientSocket, serverAddress, 9876, message);
+
+                String response = receiveMessage(clientSocket);
+                System.out.println("Réponse du serveur : " + response);
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void sendMessage(DatagramSocket socket, InetAddress address, int port, String message) throws IOException {
+        byte[] sendBuffer = message.getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, port);
+        socket.send(sendPacket);
+    }
+
+    private static String receiveMessage(DatagramSocket socket) throws IOException {
+        byte[] receiveBuffer = new byte[1024];
+        DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+        socket.receive(receivePacket);
+
+        return new String(receivePacket.getData(), 0, receivePacket.getLength());
     }
 }
