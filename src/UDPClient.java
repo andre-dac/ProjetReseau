@@ -3,31 +3,47 @@ import java.net.*;
 import java.util.Scanner;
 
 public class UDPClient {
+    private static final int PORT = 9876;
+    private static final String SERVER_IP = "127.0.0.1";
+
     public static void main(String[] args) {
         try {
             DatagramSocket clientSocket = new DatagramSocket();
-            InetAddress serverAddress = InetAddress.getByName("localhost");
+            InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
-            System.out.println("Client UDP démarré.");
-
-            // Envoi du message initial "hello serveur RX302"
-            String initialMessage = "hello serveur RX302";
-            sendMessage(clientSocket, serverAddress, 9876, initialMessage);
-
-            // Réception de la réponse du serveur
-            String initialResponse = receiveMessage(clientSocket);
-            System.out.println("Réponse du serveur : " + initialResponse);
-
-            // Communication continue : envoi et réception des messages du clavier
             Scanner scanner = new Scanner(System.in);
+            System.out.print("Entrez votre pseudo : ");
+            String pseudo = scanner.nextLine();
+
+            sendMessage(clientSocket, serverAddress, PORT, "LOGIN:" + pseudo);
+
+            Thread receiveThread = new Thread(() -> {
+                while (true) {
+                    try {
+                        String response = receiveMessage(clientSocket);
+                        System.out.println(response);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            receiveThread.start();
+
             while (true) {
-                System.out.print("Votre message : ");
                 String message = scanner.nextLine();
-
-                sendMessage(clientSocket, serverAddress, 9876, message);
-
-                String response = receiveMessage(clientSocket);
-                System.out.println("Réponse du serveur : " + response);
+                if (message.startsWith("@")) {
+                    // Message privé au format : @pseudo message
+                    int spaceIndex = message.indexOf(" ");
+                    if (spaceIndex > 1) {
+                        String targetPseudo = message.substring(1, spaceIndex);
+                        String privateMessage = message.substring(spaceIndex + 1);
+                        sendMessage(clientSocket, serverAddress, PORT, "PRIVATE:" + targetPseudo + ":" + privateMessage);
+                    } else {
+                        System.out.println("Format incorrect. Utilisez : @pseudo message");
+                    }
+                } else {
+                    sendMessage(clientSocket, serverAddress, PORT, "BROADCAST:" + message);
+                }
             }
 
         } catch (IOException e) {
@@ -45,7 +61,6 @@ public class UDPClient {
         byte[] receiveBuffer = new byte[1024];
         DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
         socket.receive(receivePacket);
-
         return new String(receivePacket.getData(), 0, receivePacket.getLength());
     }
 }
