@@ -19,7 +19,7 @@ import java.util.*;
  */
 public class UDPServer {
     private static final int PORT = 9876;
-    private static final String SERVER_IP = "192.168.1.59";
+    private static final String SERVER_IP = "localhost";
 
     /**
      * Collection associant une clé (IP:PORT) au pseudo du client.

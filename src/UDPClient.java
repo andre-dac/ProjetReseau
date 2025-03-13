@@ -20,7 +20,7 @@ import java.util.Scanner;
  */
 public class UDPClient {
     private static final int PORT = 9876;
-    private static final String SERVER_IP = "192.168.62.43";
+    private static final String SERVER_IP = "localhost";
 
     /**
      * Point d'entrée de l'application client.
