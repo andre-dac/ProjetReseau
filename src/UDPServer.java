@@ -11,11 +11,11 @@ import java.util.*;
  *   <li><b>LOGIN:</b> Enregistrement d'un nouveau client avec son pseudo.</li>
  *   <li><b>PRIVATE:</b> Envoi de messages privés d'un client vers un autre.</li>
  *   <li><b>BROADCAST:</b> Diffusion d'un message à tous les clients connectés.</li>
+ *   <li><b>LIST:</b> Renvoi de la liste des utilisateurs connectés au client demandeur.</li>
  * </ul>
  * Les clients sont identifiés par une clé sous la forme "IP:PORT" et stockés dans une collection.
  * </p>
  *
- * @version 1.0
  */
 public class UDPServer {
     private static final int PORT = 9876;
@@ -36,6 +36,7 @@ public class UDPServer {
      *   <li>Si le message commence par "LOGIN:", le client est enregistré et un message de confirmation est envoyé.</li>
      *   <li>Si le message commence par "PRIVATE:", le message est traité comme un message privé.</li>
      *   <li>Si le message commence par "BROADCAST:", le message est diffusé à tous les clients (sauf l'expéditeur).</li>
+     *   <li>Si le message est exactement "LIST", la liste de tous les utilisateurs connectés est renvoyée au client demandeur.</li>
      *   <li>Sinon, un message d'erreur est renvoyé au client.</li>
      * </ul>
      * </p>
@@ -69,6 +70,21 @@ public class UDPServer {
                         String targetPseudo = message.substring(8, firstColon);
                         String privateMessage = message.substring(firstColon + 1);
                         sendPrivateMessage(serverSocket, clientKey, targetPseudo, privateMessage);
+                    }
+                } else if (message.equals("LIST")) {
+                    if (clients.containsKey(clientKey)) {
+                        // Construction de la liste des utilisateurs connectés.
+                        StringBuilder userList = new StringBuilder("Utilisateurs connectés : ");
+                        for (String user : clients.values()) {
+                            userList.append(user).append(", ");
+                        }
+                        // Suppression de la dernière virgule et espace.
+                        if (userList.length() > 0) {
+                            userList.setLength(userList.length() - 2);
+                        }
+                        sendMessage(serverSocket, clientAddress, clientPort, userList.toString());
+                    } else {
+                        sendMessage(serverSocket, clientAddress, clientPort, "Erreur : Vous devez vous connecter en envoyant LOGIN:pseudo.");
                     }
                 } else if (message.startsWith("BROADCAST:")) {
                     if (clients.containsKey(clientKey)) {

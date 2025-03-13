@@ -11,7 +11,6 @@ import java.net.SocketException;
  * Les résultats du scan sont affichés sur la sortie standard.
  * </p>
  *
- * @version 1.0
  */
 public class UDPScanner {
 

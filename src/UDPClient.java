@@ -13,11 +13,14 @@ import java.util.Scanner;
  * Les messages privés doivent être préfixés par '@' suivi du pseudo du destinataire.
  * </p>
  *
- * @version 1.0
+ * Si l'utilisateur saisit "@all", une commande est envoyée au serveur pour afficher
+ * tous les utilisateurs connectés.
+ * </p>
+ *
  */
 public class UDPClient {
     private static final int PORT = 9876;
-    private static final String SERVER_IP = "192.168.1.59";
+    private static final String SERVER_IP = "192.168.62.43";
 
     /**
      * Point d'entrée de l'application client.
@@ -58,7 +61,10 @@ public class UDPClient {
             // Boucle principale pour l'envoi de messages.
             while (true) {
                 String message = scanner.nextLine();
-                if (message.startsWith("@")) {
+                if (message.equals("@all")) {
+                    // Si l'utilisateur envoie "@all", envoi d'une commande LIST pour demander la liste des utilisateurs.
+                    sendMessage(clientSocket, serverAddress, PORT, "LIST");
+                } else if (message.startsWith("@")) {
                     // Message privé au format : @pseudo message
                     int spaceIndex = message.indexOf(" ");
                     if (spaceIndex > 1) {
